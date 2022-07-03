@@ -10,16 +10,13 @@ class MLP(nn.Module):
     hidden_size = 4096,
     output_size = 256,
     depth = 2,
-    normalizationFinalLayer = False
     ):  
         super().__init__()
         layers = []
         inp = input_size
         for d in range(depth):
-            if d == depth - 1 and normalizationFinalLayer:
+            if d == depth - 1:
                 layers.append(nn.Linear(inp, output_size))
-            elif d == depth - 1 and not normalizationFinalLayer:
-                layers.extend([nn.Linear(inp, output_size), nn.BatchNorm1d(output_size), nn.ReLU(inplace=True)])
             else:
                 layers.extend([nn.Linear(inp, hidden_size), nn.BatchNorm1d(hidden_size), nn.ReLU(inplace=True)])
                 inp = hidden_size
@@ -39,11 +36,11 @@ class OnlineNetwork(nn.Module):
     closedFormPredicator = False):
         super().__init__()
         self.backend = resnet18(pretrained=False)
-        self.projection = MLP(input_size = input_size, output_size = output_size, hidden_size = hidden_size, depth = depth_proj,  normalizationFinalLayer=True)
+        self.projection = MLP(input_size = input_size, output_size = output_size, hidden_size = hidden_size, depth = depth_proj)
         self.predictor = None
 
         if not closedFormPredicator:
-            self.predictor = MLP(input_size=output_size, output_size = output_size, hidden_size = hidden_size, depth = depth_pred, normalizationFinalLayer=False)
+            self.predictor = MLP(input_size=output_size, output_size = output_size, hidden_size = hidden_size, depth = depth_pred)
 
     def forward(self, x):
         x = self.backend(x)
@@ -63,7 +60,7 @@ class TargetNetwork(nn.Module):
     depth_proj=2):
         super().__init__()
         self.backend = resnet18(pretrained=False)
-        self.projection = MLP(input_size = input_size, output_size = output_size, hidden_size = hidden_size, depth = depth_proj,  normalizationFinalLayer=True)
+        self.projection = MLP(input_size = input_size, output_size = output_size, hidden_size = hidden_size, depth = depth_proj)
         self.predictor = None
 
 
@@ -89,25 +86,31 @@ class BYOL(nn.Module):
         super().__init__()
         self.t = t
         self.eAvg = EAvg
+        self.closedForm = closedFormPredicator
         self.onlineNet = OnlineNetwork(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
         depth_proj= depth_proj, depth_pred=depth_pred, closedFormPredicator = closedFormPredicator)
         self.targetNet = TargetNetwork(input_size=input_size, hidden_size=hidden_size, output_size=output_size, depth_proj=depth_proj)
 
-    def updateTargetNetwork(self, EAvg=True, lamb = 10):
+    def updateTargetNetwork(self, lamb = 10):
         with torch.no_grad():
             for pOn,pTa in zip(self.onlineNet.parameters(), self.targetNet.parameters()):
-                if self.eAvg:
+                if self.eAvg and not self.closedForm :
                     pTa = self.t*pTa + (1-self.t)*pOn
                 else:
                     pTa = lamb*pOn
 
     def forward(self, x, y):
-        x1 = self.onlineNet(x)
-        y1 = self.onlineNet(y)
-        x2 = self.targetNet(x)
-        y2 = self.targetNet(y)
+        xOn = self.onlineNet(x)
+        yOn = self.onlineNet(y)
+        xTg = self.targetNet(x)
+        yTg = self.targetNet(y)
 
-        return x1, y1, x2, y2
+        if self.closedForm:
+            xOn = (xOn.T@yTg)/(xOn.T@xOn)
+            yOn = (yOn.T@xTg)/(yOn.T@yOn)
+            #print(xOn.shape, yOn.shape)
+
+        return xOn, yOn, xTg, yTg
 
         
     

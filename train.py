@@ -49,7 +49,7 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False)
 
 lr = base_lr*batch_size/offset_bs
 
-byol = BYOL(input_size=512)
+byol = BYOL(input_size=512, closedFormPredicator=True)
 
 #read papers:
 #https://arxiv.org/pdf/1708.03888v1.pdf (sgd)
@@ -64,10 +64,11 @@ def regression_loss(x, y):
     y = F.normalize(y, dim=1, p=2)
     return 2 -2 * (x * y).sum(dim=-1)
 
-def criterion(x1, y1, x2, y2):
-    return (regression_loss(x1, y1) + regression_loss(x2, y2)).mean()
+def criterion(xOn, yTg, yOn, xTg):
+    print(xOn.shape, yTg.shape, yOn.shape, xTg.shape)
+    return (regression_loss(xOn, yTg) + regression_loss(yOn, xTg)).mean()
 
-def train_loop(model, optimizer, scheduler, trainloader, transform, transform1, criterion, device):
+def train_loop(model, optimizer, trainloader, transform, transform1, criterion, device):
     model.to(device)
     tk0 = tqdm(trainloader)
     train_loss = []
@@ -78,21 +79,21 @@ def train_loop(model, optimizer, scheduler, trainloader, transform, transform1, 
         x = transform(batch)
         x1 = transform1(batch)
 
-        onlinex, onliney, targetx, targety = model(x, x1)
-        loss = criterion(onlinex, onliney, targetx, targety)
+        onlinex, onlinex1, targetx, targetx1 = model(x, x1)
+        loss = criterion(onlinex, targetx1, onlinex1, targetx)
         train_loss.append(loss.item())
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         byol.updateTargetNetwork()
 
-        del batch, x, x1, onlinex, onliney, targetx, targety
+        del batch, x, x1, onlinex, onlinex1, targetx, targetx1
     return train_loss
 
 
 
 for epoch in range(10):
-    train_loss = train_loop(byol, optimizer, None, trainloader, transformT, transformT1, criterion, torch.device('cuda'))
+    train_loss = train_loop(byol, optimizer, trainloader, transformT, transformT1, criterion, torch.device('cuda'))
     print(np.mean(train_loss))
 
 
