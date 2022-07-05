@@ -62,10 +62,9 @@ optimizer = optim.SGD( params, lr=lr, momentum= 0.9, weight_decay=1.5e-4)
 def regression_loss(x, y):
     x = F.normalize(x, dim=1, p=2)
     y = F.normalize(y, dim=1, p=2)
-    return 2 -2 * (x * y).sum(dim=-1)
+    return 2 -2 * (y@x).sum(dim=-1)
 
 def criterion(xOn, yTg, yOn, xTg):
-    print(xOn.shape, yTg.shape, yOn.shape, xTg.shape)
     return (regression_loss(xOn, yTg) + regression_loss(yOn, xTg)).mean()
 
 def train_loop(model, optimizer, trainloader, transform, transform1, criterion, device):
