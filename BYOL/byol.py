@@ -23,7 +23,6 @@ class MLP(nn.Module):
         self.layer = nn.Sequential(*layers)
     
     def forward(self, x):
-        #print(x.shape)
         return self.layer(x)
 
 class OnlineNetwork(nn.Module):
@@ -108,7 +107,6 @@ class BYOL(nn.Module):
         if self.closedForm:
             xOn = (xOn.T@yTg)/(xOn.T@xOn)
             yOn = (yOn.T@xTg)/(yOn.T@yOn)
-            #print(xOn.shape, yOn.shape)
 
         return xOn, yOn, xTg, yTg
 
