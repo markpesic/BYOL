@@ -11,7 +11,9 @@ from BYOL.byol import BYOL
 
 from tqdm import tqdm
 
-epochs = 1000
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+epochs = 30
 batch_size = 128
 offset_bs = 256
 base_lr = 0.03
@@ -42,7 +44,7 @@ transformEvalT = tr.Compose([])
 #testloader = torch.utils.data.DataLoader(traindt, batch_size=128, shuffle=True)
 
 trainset = datasets.CIFAR100(root='./data', train=True, download=True, transform=tr.ToTensor())
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=256, shuffle=True)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True)
 
 testset = datasets.CIFAR100(root='./data', train=False, download=True, transform=tr.ToTensor())
 testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False)
@@ -50,6 +52,8 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False)
 lr = base_lr*batch_size/offset_bs
 
 byol = BYOL(input_size=512, closedFormPredicator=True)
+
+byol.to(device)
 
 #read papers:
 #https://arxiv.org/pdf/1708.03888v1.pdf (sgd)
@@ -68,7 +72,6 @@ def criterion(xOn, yTg, yOn, xTg):
     return (regression_loss(xOn, yTg) + regression_loss(yOn, xTg)).mean()
 
 def train_loop(model, optimizer, trainloader, transform, transform1, criterion, device):
-    model.to(device)
     tk0 = tqdm(trainloader)
     train_loss = []
 
@@ -90,8 +93,7 @@ def train_loop(model, optimizer, trainloader, transform, transform1, criterion, 
     return train_loss
 
 
-
-for epoch in range(10):
+for epoch in range(epochs):
     train_loss = train_loop(byol, optimizer, trainloader, transformT, transformT1, criterion, torch.device('cuda'))
     print(np.mean(train_loss))
 
