@@ -22,6 +22,45 @@ model = BYOL(input_size=2048,
    
 ```
 
+## Training
+```python
+import torch
+from BYOL.byol import BYOL
+from BYOL.utils import criterion, get_byol_transforms
+#train_loader, size, mean, std, lr and device given by the users
+
+t, t1, _ = get_byol_transforms(size, mean, std)
+
+model = BYOL(input_size=2048,
+    hidden_size=4096,
+    output_size=256,
+    depth_proj=2,
+    depth_pred=2,
+    closedFormPredicator = False,
+    EAvg = True,
+    t = 0.996,
+    backend='resnet50',
+    pretrained=False)
+    
+model = model.to(device)
+optimizer = torch.optim.SGD( model.parameters(), lr=lr, momentum= 0.9, weight_decay=1.5e-4)
+
+for epoch in range(30):
+    model.train()
+    for batch, _ in train_loader:
+        batch = batch.to(device)
+        x = transform(batch)
+        x1 = transform1(batch)
+
+        onlinex, onlinex1, targetx, targetx1 = model(x, x1)
+        loss = criterion(onlinex, targetx1, onlinex1, targetx)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        byol.updateTargetNetwork()
+
+```
+
 ## Citation
 ```bibtex
 @misc{grill2020bootstrap,
