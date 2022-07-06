@@ -8,7 +8,7 @@ import numpy as np
 
 
 from BYOL.byol import BYOL
-
+from BYOL.utils import criterion, get_byol_transforms
 from tqdm import tqdm
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -19,23 +19,7 @@ offset_bs = 256
 base_lr = 0.03
 tempBase = 0.996
 
-transformT = tr.Compose([
-    tr.RandomResizedCrop(size=32, scale=(0.08,1), ratio=(3 / 4, 4 / 3)),
-    tr.RandomApply(nn.ModuleList([tr.RandomRotation((-90, 90))]), p=0.5),
-    tr.RandomApply(nn.ModuleList([tr.ColorJitter()]), p=0.8),
-    tr.GaussianBlur(kernel_size=(23,23), sigma=(0.1, 2.0)),
-    #tr.RandomGrayscale(p=0.2),
-    tr.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-
-transformT1 = tr.Compose([
-    tr.RandomResizedCrop(size=32, scale=(0.08,1), ratio=(3 / 4, 4 / 3)),
-    tr.RandomApply(nn.ModuleList([tr.RandomRotation((-90, 90))]), p=0.5),
-    tr.RandomApply(nn.ModuleList([tr.ColorJitter()]), p=0.8),
-    #tr.RandomGrayscale(p=0.2),
-    tr.RandomApply(nn.ModuleList([tr.GaussianBlur(kernel_size=(23,23), sigma=(0.1, 2.0))]), p=0.1),
-    tr.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-
-transformEvalT = tr.Compose([])
+transformT, transformT1, transformEvalT = get_byol_transforms(32, (0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
 
 #traindt = datasets.ImageNet(root='./data', split = 'train')
 #trainloader = torch.utils.data.DataLoader(traindt, batch_size=batch_size, shuffle=True)
@@ -62,14 +46,6 @@ byol.to(device)
 params = byol.parameters()
 optimizer = optim.SGD( params, lr=lr, momentum= 0.9, weight_decay=1.5e-4)
 #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=)
-
-def regression_loss(x, y):
-    x = F.normalize(x, dim=1, p=2)
-    y = F.normalize(y, dim=1, p=2)
-    return 2 -2 * (y@x).sum(dim=-1)
-
-def criterion(xOn, yTg, yOn, xTg):
-    return (regression_loss(xOn, yTg) + regression_loss(yOn, xTg)).mean()
 
 def train_loop(model, optimizer, trainloader, transform, transform1, criterion, device):
     tk0 = tqdm(trainloader)
