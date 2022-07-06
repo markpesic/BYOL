@@ -16,6 +16,8 @@ model = BYOL(input_size=2048,
     depth_pred=2,
     closedFormPredicator = False,
     EAvg = True,
-    t = 0.996)
+    t = 0.996,
+    backend='resnet50',
+    pretrained=False)
    
 ```
