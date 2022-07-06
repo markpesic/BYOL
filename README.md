@@ -1,11 +1,11 @@
 # BYOL
-# A BYOL implementation in pytorch [Bootstrap Your Own Latent A New Approach to Self-Supervised Learning](https://arxiv.org/pdf/2006.07733.pdf)
+## A BYOL implementation in pytorch [Bootstrap Your Own Latent A New Approach to Self-Supervised Learning](https://arxiv.org/pdf/2006.07733.pdf)
 
 
 ![byol architecture](https://github.com/markpesic/byol/blob/master/images/byol.png?raw=true)
 
 
-To instantiate a byol model
+## Model
 ```python
 from BYOL.byol import BYOL
 
@@ -17,6 +17,5 @@ model = BYOL(input_size=2048,
     closedFormPredicator = False,
     EAvg = True,
     t = 0.996)
-    
    
 ```
