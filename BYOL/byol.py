@@ -86,13 +86,13 @@ class BYOL(nn.Module):
     depth_proj=2,
     depth_pred=2,
     closedFormPredicator = False,
-    EAvg = True,
+    EMA = True,
     t = 0.996,
     backend='resnet50',
     pretrained = False):
         super().__init__()
         self.t = t
-        self.eAvg = EAvg
+        self.EMA = EMA
         self.closedForm = closedFormPredicator
         self.onlineNet = OnlineNetwork(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
         depth_proj= depth_proj, depth_pred=depth_pred, closedFormPredicator = closedFormPredicator, backend=backend, pretrained=pretrained)
@@ -101,7 +101,7 @@ class BYOL(nn.Module):
     def updateTargetNetwork(self, lamb = 10):
         with torch.no_grad():
             for pOn,pTa in zip(self.onlineNet.parameters(), self.targetNet.parameters()):
-                if self.eAvg and not self.closedForm :
+                if self.EMA and not self.closedForm :
                     pTa = self.t*pTa + (1-self.t)*pOn
                 else:
                     pTa = lamb*pOn
