@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as tr
@@ -5,7 +6,7 @@ import torchvision.transforms as tr
 def regression_loss(x, y):
     x = F.normalize(x, dim=1, p=2)
     y = F.normalize(y, dim=1, p=2)
-    return 2 -2 * (y@x).sum(dim=-1)
+    return 2 -2 * torch.mm(y,x.T).sum(dim=-1)
 
 def criterion(xOn, yTg, yOn, xTg):
     return (regression_loss(xOn, yTg) + regression_loss(yOn, xTg)).mean()

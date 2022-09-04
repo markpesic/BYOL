@@ -35,7 +35,7 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False)
 
 lr = base_lr*batch_size/offset_bs
 
-byol = BYOL(input_size=512, closedFormPredicator=True)
+byol = BYOL(input_size=512, closedFormPredicator=False, backend='resnet34')
 
 byol.to(device)
 
