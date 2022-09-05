@@ -35,7 +35,7 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=128, shuffle=False)
 
 lr = base_lr*batch_size/offset_bs
 
-byol = BYOL(input_size=512, closedFormPredicator=False, backend='resnet34')
+byol = BYOL(input_size=512, closedFormPredicator=True, backend='resnet34')
 
 byol.to(device)
 
@@ -58,7 +58,7 @@ def train_loop(model, optimizer, trainloader, transform, transform1, criterion, 
         x1 = transform1(batch)
 
         onlinex, onlinex1, targetx, targetx1 = model(x, x1)
-        loss = criterion(onlinex, targetx1, onlinex1, targetx)
+        loss = criterion(onlinex, targetx1, onlinex1, targetx, True)
         train_loss.append(loss.item())
         optimizer.zero_grad()
         loss.backward()

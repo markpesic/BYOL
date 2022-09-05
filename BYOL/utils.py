@@ -3,13 +3,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as tr
 
-def regression_loss(x, y):
+def regression_loss(x, y, closedFormPredicator = False):
     x = F.normalize(x, dim=1, p=2)
     y = F.normalize(y, dim=1, p=2)
-    return 2 -2 * torch.mm(y,x.T).sum(dim=-1)
+    if closedFormPredicator:
+        res = 2 - 2*(x).sum(dim=-1)
+    else:
+        res = 2 -2 * (x*y.T).sum(dim=-1)
+    return res
 
-def criterion(xOn, yTg, yOn, xTg):
-    return (regression_loss(xOn, yTg) + regression_loss(yOn, xTg)).mean()
+def criterion(xOn, yTg, yOn, xTg, closedFormPredicator = False):
+    return (regression_loss(xOn, yTg, closedFormPredicator = closedFormPredicator) + regression_loss(yOn, xTg, closedFormPredicator = closedFormPredicator)).mean()
 
 
 def get_byol_transforms(size, mean, std):
