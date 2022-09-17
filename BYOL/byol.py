@@ -101,7 +101,7 @@ class BYOL(nn.Module):
         with torch.no_grad():
             for pOn,pTa in zip(self.onlineNet.parameters(), self.targetNet.parameters()):
                 if self.EMA and not self.closedForm :
-                    pTa = self.t*pTa + (1-self.t)*pOn
+                    pTa = self.t*pTa + (1. - self.t)*pOn
                 else:
                     pTa = lamb*pOn
 
