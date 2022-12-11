@@ -18,24 +18,44 @@ def criterion(xOn, yTg, yOn, xTg, closedFormPredicator = False):
 
 def get_byol_transforms(size, mean, std):
     transformT = tr.Compose([
-    tr.RandomResizedCrop(size=size, scale=(0.08,1), ratio=(3 / 4, 4 / 3)),
-    tr.RandomApply(nn.ModuleList([tr.RandomRotation((-90, 90))]), p=0.5),
-    tr.RandomApply(nn.ModuleList([tr.ColorJitter()]), p=0.8),
-    tr.GaussianBlur(kernel_size=(23,23), sigma=(0.1, 2.0)),
-    #tr.RandomGrayscale(p=0.2),
-    tr.Normalize(mean, std)])
+        transforms.ToTensor(),
+        tr.RandomResizedCrop(size=size, scale=(0.08,1), ratio=(3 / 4, 4 / 3)),
+        tr.RandomRotation((-90, 90)),
+        tr.ColorJitter(),
+        tr.GaussianBlur(kernel_size=(23,23), sigma=(0.1, 2.0)),
+        tr.RandomGrayscale(p=0.2),
+        tr.Normalize(mean, std),
+        ])
 
     transformT1 = tr.Compose([
+        transforms.ToTensor(),
         tr.RandomResizedCrop(size=size, scale=(0.08,1), ratio=(3 / 4, 4 / 3)),
-        tr.RandomApply(nn.ModuleList([tr.RandomRotation((-90, 90))]), p=0.5),
-        tr.RandomApply(nn.ModuleList([tr.ColorJitter()]), p=0.8),
-        #tr.RandomGrayscale(p=0.2),
-        tr.RandomApply(nn.ModuleList([tr.GaussianBlur(kernel_size=(23,23), sigma=(0.1, 2.0))]), p=0.1),
-        tr.Normalize(mean, std)])
+        tr.RandomRotation((-90, 90)),
+        tr.ColorJitter(),
+        tr.RandomGrayscale(p=0.2),
+        tr.GaussianBlur(kernel_size=(23,23), sigma=(0.1, 2.0)),
+        tr.Normalize(mean, std),
+        ])
 
     transformEvalT = tr.Compose([
+        transforms.ToTensor(),
         tr.CenterCrop(size=size),
-        tr.Normalize(mean, std)
+        tr.Normalize(mean, std),
+        
     ])
 
     return transformT, transformT1, transformEvalT
+
+from torchvision.transforms import transforms
+
+
+class MultiViewDataInjector(object):
+    def __init__(self, *args):
+        self.transforms = args[0]
+        self.random_flip = transforms.RandomHorizontalFlip()
+
+    def __call__(self, sample, *with_consistent_flipping):
+        if with_consistent_flipping:
+            sample = self.random_flip(sample)
+        output = [transform(sample) for transform in self.transforms]
+        return output
